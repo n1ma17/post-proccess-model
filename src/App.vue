@@ -5,3 +5,10 @@ import Model from './components/3DModel.vue'
 <template>
   <Model />
 </template>
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+</style>

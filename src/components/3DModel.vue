@@ -8,7 +8,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
-import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass'
+// import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass'
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
 
 const canvasRef = ref(null)
@@ -16,8 +16,8 @@ const canvasRef = ref(null)
 onMounted(() => {
   const scene = new THREE.Scene()
   const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
-  camera.position.set(10, 10, 10)
-  camera.lookAt(0, 0, 0)
+  camera.position.set(10, 10, 100)
+  camera.lookAt(0, 190, 100)
 
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setSize(window.innerWidth, window.innerHeight)
@@ -27,6 +27,7 @@ onMounted(() => {
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
 
+  renderer.physicallyCorrectLights = true
   canvasRef.value.appendChild(renderer.domElement)
 
   const controls = new OrbitControls(camera, renderer.domElement)
@@ -38,7 +39,7 @@ onMounted(() => {
 
   // نور اصلی قوی و گرم
   const dirLight = new THREE.DirectionalLight(0xfff2cc, 6)
-  dirLight.position.set(20, 40, 20)
+  dirLight.position.set(-11.464, 56.948, 18.799)
   dirLight.castShadow = true
   dirLight.shadow.mapSize.width = 4096
   dirLight.shadow.mapSize.height = 4096
@@ -53,9 +54,10 @@ onMounted(() => {
   scene.add(rimLight)
 
   // نور Fill خیلی ضعیف
-  const fillLight = new THREE.DirectionalLight(0xffffff, 0.5)
-  fillLight.position.set(-10, 5, 10)
+  const fillLight = new THREE.DirectionalLight(0xffffff, 4)
+  fillLight.position.set(-30, 5, 10)
   fillLight.castShadow = false
+  fillLight.traverseVisible = true
   scene.add(fillLight)
 
   new RGBELoader().setPath('/hdr/').load('belfast_sunset_puresky_1k.hdr', (texture) => {
@@ -79,12 +81,12 @@ onMounted(() => {
   const renderPass = new RenderPass(scene, camera)
   composer.addPass(renderPass)
 
-  // SSAO pass with optimized settings
-  const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight)
-  ssaoPass.kernelRadius = 80
-  ssaoPass.minDistance = 0.005
-  ssaoPass.maxDistance = 0.2
-  composer.addPass(ssaoPass)
+  // // SSAO pass with optimized settings
+  // const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight)
+  // ssaoPass.kernelRadius = 80
+  // ssaoPass.minDistance = 0.005
+  // ssaoPass.maxDistance = 0.2
+  // composer.addPass(ssaoPass)
 
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
@@ -149,7 +151,7 @@ onMounted(() => {
     camera.updateProjectionMatrix()
     renderer.setSize(window.innerWidth, window.innerHeight)
     composer.setSize(window.innerWidth, window.innerHeight)
-    ssaoPass.setSize(window.innerWidth, window.innerHeight)
+    // ssaoPass.setSize(window.innerWidth, window.innerHeight)
     pixelRatio = renderer.getPixelRatio()
     fxaaPass.material.uniforms['resolution'].value.x = 1 / (window.innerWidth * pixelRatio)
     fxaaPass.material.uniforms['resolution'].value.y = 1 / (window.innerHeight * pixelRatio)
