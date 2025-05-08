@@ -31,17 +31,18 @@ onMounted(() => {
 
   const renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.setPixelRatio(window.devicePixelRatio)
-  renderer.setSize(window.innerWidth, window.innerHeight)
 
-  // تنظیمات پیشرفته رندرر برای کیفیت بالاتر
-  renderer.toneMapping = THREE.ACESFilmicToneMapping // تون مپینگ بهتر برای رنگ‌های طبیعی‌تر
-  renderer.toneMappingExposure = 1.2 // تنظیم نوردهی
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  // renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMapping = THREE.LinearToneMapping
+  // renderer.toneMappingExposure = 3.5
+  renderer.toneMappingExposure = 1.5
   renderer.outputEncoding = THREE.sRGBEncoding
   renderer.outputColorSpace = THREE.SRGBColorSpace
-  renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
-  renderer.shadowMap.needsUpdate = true
-  renderer.physicallyCorrectLights = true
+
+  renderer.shadowMap.enabled = true // فعال کردن سیستم سایه در رندرر
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap // استفاده از PCF برای سایه‌های نرم‌تر و با کیفیت‌تر
+  renderer.shadowMap.needsUpdate = true // اطمینان از به‌روزرسانی سایه‌ها
 
   renderer.physicallyCorrectLights = true
   canvasRef.value.appendChild(renderer.domElement)
@@ -52,33 +53,34 @@ onMounted(() => {
   controls.dampingFactor = 0.05 // شدت damping اینجا تنظیم شده
 
   // نور محیطی برای روشنایی کلی صحنه
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
+  const ambientLight = new THREE.AmbientLight(0xfff2cc, 0.5)
   scene.add(ambientLight)
 
   // نور اصلی با تنظیمات دقیق سایه
-  const dirLight = new THREE.DirectionalLight(0xfff2cc, 2.5)
-  dirLight.position.set(50, 50, 50)
-  dirLight.castShadow = true
-  dirLight.shadow.mapSize.width = 4096
-  dirLight.shadow.mapSize.height = 4096
-  dirLight.shadow.radius = 8
-  dirLight.shadow.bias = -0.001
-  dirLight.shadow.camera.near = 0.1
-  dirLight.shadow.camera.far = 500
-  dirLight.shadow.camera.left = -100
-  dirLight.shadow.camera.right = 100
-  dirLight.shadow.camera.top = 100
-  dirLight.shadow.camera.bottom = -100
+  const dirLight = new THREE.DirectionalLight(0xfff2cc, 3)
+  dirLight.position.set(50, 50, 50) // موقعیت نور اصلی
+  dirLight.castShadow = true // فعال کردن سایه برای این نور
+  dirLight.shadow.mapSize.width = 4096 // افزایش کیفیت سایه در محور X
+  dirLight.shadow.mapSize.height = 4096 // افزایش کیفیت سایه در محور Y
+  dirLight.shadow.radius = 8 // کاهش نرمی لبه‌های سایه برای جزئیات بیشتر
+  dirLight.shadow.bias = -0.001 // تنظیم دقیق‌تر بایاس سایه
+  // تنظیمات دوربین سایه برای کنترل دقیق‌تر ناحیه سایه
+  dirLight.shadow.camera.near = 0.1 // نزدیک‌ترین فاصله رندر سایه
+  dirLight.shadow.camera.far = 500 // دورترین فاصله رندر سایه
+  dirLight.shadow.camera.left = -100 // محدوده سمت چپ ناحیه سایه
+  dirLight.shadow.camera.right = 100 // محدوده سمت راست ناحیه سایه
+  dirLight.shadow.camera.top = 100 // محدوده بالای ناحیه سایه
+  dirLight.shadow.camera.bottom = -100 // محدوده پایین ناحیه سایه
   scene.add(dirLight)
 
   // نور حاشیه‌ای برای ایجاد کنتراست بیشتر
-  const rimLight = new THREE.DirectionalLight(0xf7fbff, 1.2)
+  const rimLight = new THREE.DirectionalLight(0xf7fbff, 1.5)
   rimLight.position.set(-50, 30, -50)
   rimLight.castShadow = true
   scene.add(rimLight)
 
   // نور پرکننده برای کاهش سایه‌های خیلی تیره
-  const fillLight = new THREE.DirectionalLight(0xf7fbff, 2)
+  const fillLight = new THREE.DirectionalLight(0xf7fbff, 3)
   fillLight.position.set(-50, 20, 50)
   fillLight.castShadow = true
   scene.add(fillLight)
@@ -96,54 +98,33 @@ onMounted(() => {
       // تنظیمات سایه و متریال برای همه مش‌های مدل
       gltf.scene.traverse((child) => {
         if (child.isMesh) {
-          child.castShadow = true
-          child.receiveShadow = true
+          child.castShadow = true // فعال کردن سایه برای این مش
+          child.receiveShadow = true // فعال کردن دریافت سایه برای این مش
 
-          // تنظیمات متریال برای کیفیت بالاتر
+          // تنظیمات متریال برای سایه‌های بهتر
           if (child.material) {
-            // اگر مش مربوط به آب است
-            if (child.name.toLowerCase().includes('polySurface2210_ocean_0')) {
-              console.log('✅ مش مربوط به آب است')
-              const waterMaterial = new THREE.MeshStandardMaterial({
-                map: child.material.map,
-                color: child.material.color,
-                roughness: 1.0, // حداکثر زبری برای حذف بازتاب
-                metalness: 0.0, // حذف کامل متالیک
-                envMapIntensity: 0.0, // حذف کامل بازتاب محیط
-                transparent: true,
-                opacity: 0.8,
+            // تبدیل به MeshStandardMaterial اگر نیست (این متریال برای سایه‌های واقعی‌تر ضروری است)
+            if (!(child.material instanceof THREE.MeshStandardMaterial)) {
+              const standardMaterial = new THREE.MeshStandardMaterial({
+                map: child.material.map, // حفظ تکسچر اصلی
+                color: child.material.color, // حفظ رنگ اصلی
+                roughness: 0.7, // میزان زبری سطح (تاثیر مستقیم روی کیفیت سایه)
+                metalness: 0.2, // میزان متالیک بودن سطح
               })
-              child.material = waterMaterial
-            } else {
-              // برای سایر سطوح، تنظیمات قبلی را حفظ می‌کنیم
-              if (!(child.material instanceof THREE.MeshStandardMaterial)) {
-                const standardMaterial = new THREE.MeshStandardMaterial({
-                  map: child.material.map,
-                  color: child.material.color,
-                  roughness: 0.5,
-                  metalness: 0.3,
-                  envMapIntensity: 1.2,
-                  aoMapIntensity: 1.0,
-                  normalScale: new THREE.Vector2(1, 1),
-                })
-                child.material = standardMaterial
-              }
+              child.material = standardMaterial
             }
 
-            child.material.needsUpdate = true
+            child.material.needsUpdate = true // اطمینان از به‌روزرسانی متریال
 
-            // اگر متریال آرایه‌ای است
+            // اگر متریال آرایه‌ای است (چند متریال)
             if (Array.isArray(child.material)) {
               child.material.forEach((mat) => {
                 if (!(mat instanceof THREE.MeshStandardMaterial)) {
                   const standardMaterial = new THREE.MeshStandardMaterial({
                     map: mat.map,
                     color: mat.color,
-                    roughness: 0.5,
-                    metalness: 0.3,
-                    envMapIntensity: 1.2,
-                    aoMapIntensity: 1.0,
-                    normalScale: new THREE.Vector2(1, 1),
+                    roughness: 0.7,
+                    metalness: 0.2,
                   })
                   mat = standardMaterial
                 }
@@ -154,11 +135,10 @@ onMounted(() => {
 
           // تنظیمات تکسچر برای کیفیت بهتر
           if (child.material.map) {
-            child.material.map.generateMipmaps = true
-            child.material.map.minFilter = THREE.LinearMipmapLinearFilter
-            child.material.map.magFilter = THREE.LinearFilter // فیلتر بهتر برای بزرگنمایی
-            child.material.map.encoding = THREE.sRGBEncoding
-            child.material.map.anisotropy = maxAnisotropy
+            child.material.map.generateMipmaps = true // تولید مپ‌های مختلف برای کیفیت بهتر در فاصله‌های مختلف
+            child.material.map.minFilter = THREE.LinearMipmapLinearFilter // فیلتر مناسب برای مینیمم
+            child.material.map.encoding = THREE.sRGBEncoding // تنظیم رنگ‌ها
+            child.material.map.anisotropy = maxAnisotropy // بهبود کیفیت تکسچر در زوایای مختلف
           }
         }
       })

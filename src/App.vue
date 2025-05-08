@@ -1,9 +1,11 @@
 <script setup>
-import Model from './components/3DModel.vue'
+// import Model from './components/3DModel.vue'
+import ThreeModel from './components/ThreeModel.vue'
 </script>
 
 <template>
-  <Model />
+  <!-- <Model /> -->
+  <ThreeModel />
 </template>
 
 <style>
