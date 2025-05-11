@@ -1,66 +1,42 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, onUnmounted } from 'vue'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
+import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
-import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
-import { GammaCorrectionShader } from 'three/examples/jsm/shaders/GammaCorrectionShader.js'
 
-const canvasRef = ref(null)
+const container = ref(null)
+let scene, camera, renderer, controls, composer
 
 onMounted(() => {
-  const scene = new THREE.Scene()
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
-  // const aspect = window.innerWidth / window.innerHeight
-  // const frustumSize = 20 // اینو می‌تونی به دلخواه تنظیم کنی (بسته به سایز مدل)
-  // const camera = new THREE.OrthographicCamera(
-  //   (-frustumSize * aspect) / 2, // left
-  //   (frustumSize * aspect) / 2, // right
-  //   frustumSize / 2, // top
-  //   -frustumSize / 2, // bottom
-  //   0.1, // near
-  //   1000, // far
-  // )
-  camera.position.set(10, 10, 100)
-  camera.lookAt(0, 190, 100)
+  scene = new THREE.Scene()
+  scene.background = new THREE.Color('#bdd4e5')
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true })
-  renderer.setPixelRatio(window.devicePixelRatio)
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+  camera.position.set(0, 20, 30)
+  camera.lookAt(0, 0, 0)
+
+  renderer = new THREE.WebGLRenderer({ antialias: true })
+  renderer.toneMapping = THREE.LinearToneMapping
+  renderer.toneMappingExposure = 0.978
+
   renderer.setSize(window.innerWidth, window.innerHeight)
-
-  // تنظیمات پیشرفته رندرر برای کیفیت بالاتر
-  renderer.toneMapping = THREE.ACESFilmicToneMapping // تون مپینگ بهتر برای رنگ‌های طبیعی‌تر
-  renderer.toneMappingExposure = 1.2 // تنظیم نوردهی
-  renderer.outputEncoding = THREE.sRGBEncoding
-  renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
-  renderer.shadowMap.needsUpdate = true
-  renderer.physicallyCorrectLights = true
+  renderer.outputColorSpace = THREE.SRGBColorSpace
+  container.value.appendChild(renderer.domElement)
 
-  renderer.physicallyCorrectLights = true
-  canvasRef.value.appendChild(renderer.domElement)
-
-  // تنظیمات OrbitControls با damping نرم‌تر
-  const controls = new OrbitControls(camera, renderer.domElement)
-  controls.enableDamping = true
-  controls.dampingFactor = 0.05 // شدت damping اینجا تنظیم شده
-
-  // نور محیطی برای روشنایی کلی صحنه
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)
-  scene.add(ambientLight)
-
-  // نور اصلی با تنظیمات دقیق سایه
-  const dirLight = new THREE.DirectionalLight(0xfff2cc, 2.5)
-  dirLight.position.set(50, 50, 50)
+  const dirLight = new THREE.DirectionalLight(0xffffff, 3.5)
+  dirLight.position.set(-100, 150, 20)
   dirLight.castShadow = true
-  dirLight.shadow.mapSize.width = 4096
-  dirLight.shadow.mapSize.height = 4096
+  dirLight.shadow.mapSize.width = 2048
+  dirLight.shadow.mapSize.height = 2048
   dirLight.shadow.radius = 8
   dirLight.shadow.bias = -0.001
   dirLight.shadow.camera.near = 0.1
@@ -69,227 +45,251 @@ onMounted(() => {
   dirLight.shadow.camera.right = 100
   dirLight.shadow.camera.top = 100
   dirLight.shadow.camera.bottom = -100
+  const targetSadowObject = new THREE.Object3D()
+  targetSadowObject.position.set(30, 0, 20)
+  dirLight.target = targetSadowObject
   scene.add(dirLight)
 
-  // نور حاشیه‌ای برای ایجاد کنتراست بیشتر
-  const rimLight = new THREE.DirectionalLight(0xf7fbff, 1.2)
-  rimLight.position.set(-50, 30, -50)
-  rimLight.castShadow = true
-  scene.add(rimLight)
+  const light = new THREE.DirectionalLight('#ffe0b5', 1)
+  light.position.set(-10, 10, 10)
+  light.shadow.bias = 0.2659
+  const targetObject = new THREE.Object3D()
+  targetObject.position.set(-15, -10, 10)
+  scene.add(targetObject)
+  light.target = targetObject
+  scene.add(light)
 
-  // نور پرکننده برای کاهش سایه‌های خیلی تیره
-  const fillLight = new THREE.DirectionalLight(0xf7fbff, 2)
-  fillLight.position.set(-50, 20, 50)
-  fillLight.castShadow = true
-  scene.add(fillLight)
+  const light2 = new THREE.DirectionalLight('#96b2b7', 0.6675)
+  light2.position.set(3, 3, 25)
+  light2.shadow.bias = 0.2659
+  const targetObject2 = new THREE.Object3D()
+  targetObject2.position.set(-3, -10, 35)
+  scene.add(targetObject2)
+  light2.target = targetObject2
+  scene.add(light2)
 
-  // بارگذاری HDR برای محیط
-  new RGBELoader().setPath('/hdr/').load('lakeside_dawn_1k.hdr', (texture) => {
+  const dirLightHelper = new THREE.DirectionalLightHelper(light, 6)
+  scene.add(dirLightHelper)
+  const dirLightHelper2 = new THREE.DirectionalLightHelper(light2, 6)
+  scene.add(dirLightHelper2)
+  const dirLightHelperShadow = new THREE.DirectionalLightHelper(dirLight, 6)
+  scene.add(dirLightHelperShadow)
+
+  // const ambientLight = new THREE.AmbientLight(0xffffff, 3.3)
+  // scene.add(ambientLight)
+  const axesHelper = new THREE.AxesHelper(50)
+  scene.add(axesHelper)
+
+  controls = new OrbitControls(camera, renderer.domElement)
+  controls.enableDamping = true
+  controls.dampingFactor = 0.05
+  controls.enabled = true
+  // تنظیم EffectComposer و SSAO
+  composer = new EffectComposer(renderer)
+  const renderPass = new RenderPass(scene, camera)
+  composer.addPass(renderPass)
+
+  const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight)
+  ssaoPass.kernelRadius = 1.0
+  ssaoPass.minDistance = 0
+  ssaoPass.maxDistance = 0
+  ssaoPass.output = SSAOPass.OUTPUT.Default
+  ssaoPass.bias = 0.7
+  ssaoPass.intensity = 0.306
+  ssaoPass.radius = 9
+  composer.addPass(ssaoPass)
+
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    0.167,
+    0.489,
+    0.442,
+  )
+  composer.addPass(bloomPass)
+
+  const VignetteShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      offset: { value: 1.0 }, // سختی (vignette hardness)
+      darkness: { value: 1.0 }, // شدت (vignette amount)
+    },
+    vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+    fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float offset;
+    uniform float darkness;
+    varying vec2 vUv;
+
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      float dist = distance(vUv, vec2(0.5, 0.5));
+      texel.rgb *= smoothstep(0.8, offset * 0.799, dist * (darkness + offset));
+      gl_FragColor = texel;
+    }
+  `,
+  }
+  const vignettePass = new ShaderPass(VignetteShader)
+  vignettePass.uniforms['darkness'].value = 0.15 // به جای 0.228
+  vignettePass.uniforms['offset'].value = 0.5
+  composer.addPass(vignettePass)
+  new RGBELoader().setPath('/hdr/').load('photo_studio_01_2k.hdr', (texture) => {
     texture.mapping = THREE.EquirectangularReflectionMapping
     scene.environment = texture
-    scene.background = new THREE.Color(0x000000)
+    scene.background = new THREE.Color('#bdd4e5')
+    loadModel()
+  })
+  const ColorCorrectionShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      brightness: { value: 0.078 },
+      contrast: { value: 0.033 },
+      saturation: { value: 1.0 },
+    },
+    vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }
+  `,
+    fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float brightness;
+    uniform float contrast;
+    uniform float saturation;
+    varying vec2 vUv;
 
-    const loader = new GLTFLoader()
-    loader.load('/models/scene2.glb', (gltf) => {
+    vec3 applySaturation(vec3 color, float sat) {
+      float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
+      return mix(vec3(luma), color, sat);
+    }
+
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      texel.rgb += brightness;
+      texel.rgb = (texel.rgb - 0.5) * (contrast + 1.0) + 0.5;
+      texel.rgb = applySaturation(texel.rgb, saturation);
+      gl_FragColor = texel;
+    }
+  `,
+  }
+
+  const colorCorrectionPass = new ShaderPass(ColorCorrectionShader)
+  colorCorrectionPass.uniforms.brightness.value = 0.078
+  colorCorrectionPass.uniforms.contrast.value = 0.033
+  colorCorrectionPass.uniforms.saturation.value = 1.0
+
+  composer.addPass(colorCorrectionPass)
+  animate()
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight
+    camera.updateProjectionMatrix()
+    renderer.setSize(window.innerWidth, window.innerHeight)
+    composer.setSize(window.innerWidth, window.innerHeight)
+  })
+})
+
+function animate() {
+  requestAnimationFrame(animate)
+  controls.update()
+  composer.render()
+}
+
+function loadModel() {
+  const loader = new GLTFLoader()
+  const dracoLoader = new DRACOLoader()
+  dracoLoader.setDecoderPath('/draco/')
+  loader.setDRACOLoader(dracoLoader)
+
+  loader.load(
+    '/models/scene2.glb',
+    (gltf) => {
+      console.log('✅ مدل لود شد')
+      const model = gltf.scene
       const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
 
-      // تنظیمات سایه و متریال برای همه مش‌های مدل
-      gltf.scene.traverse((child) => {
+      model.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true
           child.receiveShadow = true
 
-          // تنظیمات متریال برای کیفیت بالاتر
           if (child.material) {
-            // اگر مش مربوط به آب است
-            if (child.name.toLowerCase().includes('polySurface2210_ocean_0')) {
-              console.log('✅ مش مربوط به آب است')
-              const waterMaterial = new THREE.MeshStandardMaterial({
+            if (!(child.material instanceof THREE.MeshStandardMaterial)) {
+              const standardMaterial = new THREE.MeshStandardMaterial({
                 map: child.material.map,
                 color: child.material.color,
-                roughness: 1.0, // حداکثر زبری برای حذف بازتاب
-                metalness: 0.0, // حذف کامل متالیک
-                envMapIntensity: 0.0, // حذف کامل بازتاب محیط
-                transparent: true,
-                opacity: 0.8,
+                roughness: 0.5,
+                metalness: 0.3,
+                envMapIntensity: 1.2,
+                aoMapIntensity: 1.0,
+                normalScale: new THREE.Vector2(1, 1),
               })
-              child.material = waterMaterial
-            } else {
-              // برای سایر سطوح، تنظیمات قبلی را حفظ می‌کنیم
-              if (!(child.material instanceof THREE.MeshStandardMaterial)) {
-                const standardMaterial = new THREE.MeshStandardMaterial({
-                  map: child.material.map,
-                  color: child.material.color,
-                  roughness: 0.5,
-                  metalness: 0.3,
-                  envMapIntensity: 1.2,
-                  aoMapIntensity: 1.0,
-                  normalScale: new THREE.Vector2(1, 1),
-                })
-                child.material = standardMaterial
-              }
+              child.material = standardMaterial
             }
 
             child.material.needsUpdate = true
 
-            // اگر متریال آرایه‌ای است
-            if (Array.isArray(child.material)) {
-              child.material.forEach((mat) => {
-                if (!(mat instanceof THREE.MeshStandardMaterial)) {
-                  const standardMaterial = new THREE.MeshStandardMaterial({
-                    map: mat.map,
-                    color: mat.color,
-                    roughness: 0.5,
-                    metalness: 0.3,
-                    envMapIntensity: 1.2,
-                    aoMapIntensity: 1.0,
-                    normalScale: new THREE.Vector2(1, 1),
-                  })
-                  mat = standardMaterial
-                }
-                mat.needsUpdate = true
-              })
+            if (child.material.map) {
+              child.material.map.generateMipmaps = true
+              child.material.map.minFilter = THREE.LinearMipmapLinearFilter
+              child.material.map.magFilter = THREE.LinearFilter
+              child.material.map.encoding = THREE.sRGBEncoding
+              child.material.map.anisotropy = maxAnisotropy
             }
-          }
-
-          // تنظیمات تکسچر برای کیفیت بهتر
-          if (child.material.map) {
-            child.material.map.generateMipmaps = true
-            child.material.map.minFilter = THREE.LinearMipmapLinearFilter
-            child.material.map.magFilter = THREE.LinearFilter // فیلتر بهتر برای بزرگنمایی
-            child.material.map.encoding = THREE.sRGBEncoding
-            child.material.map.anisotropy = maxAnisotropy
           }
         }
       })
-      scene.add(gltf.scene)
-    })
-  })
 
-  // Postprocessing - Bloom
-  const composer = new EffectComposer(renderer)
-  const renderPass = new RenderPass(scene, camera)
-  composer.addPass(renderPass)
+      const box = new THREE.Box3().setFromObject(model)
+      const center = box.getCenter(new THREE.Vector3())
+      const size = box.getSize(new THREE.Vector3())
+      model.position.sub(center)
+      const maxDim = Math.max(size.x, size.y, size.z)
+      const scale = 100 / maxDim
+      model.scale.multiplyScalar(scale)
 
-  const bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.2,
-    0.2,
-    0.7,
+      scene.add(model)
+    },
+    (xhr) => {
+      console.log('پیشرفت لود:', ((xhr.loaded / xhr.total) * 100).toFixed(2) + '%')
+    },
+    (error) => {
+      console.error('خطا در لود مدل:', error)
+    },
   )
-  composer.addPass(bloomPass)
+}
 
-  const gammaPass = new ShaderPass(GammaCorrectionShader)
-  composer.addPass(gammaPass)
-  // // افکت vignette
-  // const vignetteShader = {
-  //   uniforms: {
-  //     tDiffuse: { value: null },
-  //     amount: { value: 0.12 },
-  //     center: { value: new THREE.Vector2(0.5, 0.5) },
-  //     radius: { value: 0.7 },
-  //     blur: { value: 0.18 },
-  //   },
-  //   vertexShader: `
-  //     varying vec2 vUv;
-  //     void main() {
-  //       vUv = uv;
-  //       gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  //     }
-  //   `,
-  //   fragmentShader: `
-  //     uniform sampler2D tDiffuse;
-  //     uniform float amount;
-  //     uniform vec2 center;
-  //     uniform float radius;
-  //     uniform float blur;
-  //     varying vec2 vUv;
-
-  //     void main() {
-  //       vec2 uv = vUv;
-  //       float dist = distance(uv, center);
-  //       float vignette = smoothstep(radius, radius - blur, dist);
-  //       vec4 color = texture2D(tDiffuse, uv);
-  //       gl_FragColor = color * (1.0 - vignette * amount);
-  //     }
-  //   `,
-  // }
-
-  // const vignettePass = new ShaderPass(vignetteShader)
-  // composer.addPass(vignettePass)
-
-  // FXAA برای آنتی‌آلیاس بهتر
-  const fxaaPass = new ShaderPass(FXAAShader)
-  let pixelRatio = renderer.getPixelRatio()
-  fxaaPass.material.uniforms['resolution'].value.x = 1 / (window.innerWidth * pixelRatio)
-  fxaaPass.material.uniforms['resolution'].value.y = 1 / (window.innerHeight * pixelRatio)
-  composer.addPass(fxaaPass)
-
-  // حلقه انیمیشن
-  const animate = () => {
-    requestAnimationFrame(animate)
-    controls.update()
-    composer.render()
+onUnmounted(() => {
+  if (renderer) {
+    renderer.dispose()
   }
-  animate()
-  const raycaster = new THREE.Raycaster()
-  const mouse = new THREE.Vector2()
-
-  function onClick(event) {
-    // محاسبه مختصات ماوس نسبت به صفحه (بین -1 و 1)
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1
-
-    // ایجاد ray از دوربین به نقطه کلیک
-    raycaster.setFromCamera(mouse, camera)
-
-    // بررسی برخورد با کل آبجکت‌های صحنه
-    const intersects = raycaster.intersectObjects(scene.children, true)
-
-    if (intersects.length > 0) {
-      const clickedObject = intersects[0].object
-      console.log('✅ کلیک شد روی:', {
-        name: clickedObject.name,
-        type: clickedObject.type,
-        material: clickedObject.material,
-        geometry: clickedObject.geometry,
-        position: clickedObject.position,
-        scale: clickedObject.scale,
-        rotation: clickedObject.rotation,
-      })
-    } else {
-      console.log('❌ هیچ آبجکتی کلیک نشد.')
-    }
-  }
-
-  window.addEventListener('click', onClick)
-  // مدیریت تغییر سایز صفحه
-  window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight
-    camera.updateProjectionMatrix()
-    // camera.left = (-frustumSize * aspect) / 2
-    // camera.right = (frustumSize * aspect) / 2
-    // camera.top = frustumSize / 2
-    // camera.bottom = -frustumSize / 2
-    renderer.setSize(window.innerWidth, window.innerHeight)
-    composer.setSize(window.innerWidth, window.innerHeight)
-    pixelRatio = renderer.getPixelRatio()
-    fxaaPass.material.uniforms['resolution'].value.x = 1 / (window.innerWidth * pixelRatio)
-    fxaaPass.material.uniforms['resolution'].value.y = 1 / (window.innerHeight * pixelRatio)
-  })
 })
 </script>
 
 <template>
-  <div ref="canvasRef"></div>
+  <div class="container">
+    <div ref="container" style="width: 100vw; height: 100vh"></div>
+  </div>
 </template>
 
 <style scoped>
-div {
+.container {
+  position: relative;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
+}
+
+div {
+  position: fixed;
+  top: 0;
+  left: 0;
+  outline: none;
 }
 </style>
