@@ -7,7 +7,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
-import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass'
+// import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
 
@@ -24,7 +24,7 @@ onMounted(() => {
 
   renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.toneMapping = THREE.LinearToneMapping
-  renderer.toneMappingExposure = 0.978
+  renderer.toneMappingExposure = 1.278
 
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.shadowMap.enabled = true
@@ -32,8 +32,8 @@ onMounted(() => {
   renderer.outputColorSpace = THREE.SRGBColorSpace
   container.value.appendChild(renderer.domElement)
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 3.5)
-  dirLight.position.set(-100, 150, 20)
+  const dirLight = new THREE.DirectionalLight(0xffffff, 3)
+  dirLight.position.set(-100, 190, 40)
   dirLight.castShadow = true
   dirLight.shadow.mapSize.width = 2048
   dirLight.shadow.mapSize.height = 2048
@@ -46,7 +46,7 @@ onMounted(() => {
   dirLight.shadow.camera.top = 100
   dirLight.shadow.camera.bottom = -100
   const targetSadowObject = new THREE.Object3D()
-  targetSadowObject.position.set(30, 0, 20)
+  targetSadowObject.position.set(30, -10, 20)
   dirLight.target = targetSadowObject
   scene.add(dirLight)
 
@@ -68,6 +68,18 @@ onMounted(() => {
   light2.target = targetObject2
   scene.add(light2)
 
+  const light3 = new THREE.DirectionalLight('#ffffff', 8)
+  light3.castShadow = false
+  light3.position.set(-20, 10, 1000)
+
+  const targetObject3 = new THREE.Object3D()
+  targetObject3.position.set(0, -20, -100)
+  scene.add(targetObject3)
+  light3.target = targetObject3
+  scene.add(light3)
+
+  const light3Helper = new THREE.DirectionalLightHelper(light3, 6)
+  scene.add(light3Helper)
   const dirLightHelper = new THREE.DirectionalLightHelper(light, 6)
   scene.add(dirLightHelper)
   const dirLightHelper2 = new THREE.DirectionalLightHelper(light2, 6)
@@ -75,8 +87,6 @@ onMounted(() => {
   const dirLightHelperShadow = new THREE.DirectionalLightHelper(dirLight, 6)
   scene.add(dirLightHelperShadow)
 
-  // const ambientLight = new THREE.AmbientLight(0xffffff, 3.3)
-  // scene.add(ambientLight)
   const axesHelper = new THREE.AxesHelper(50)
   scene.add(axesHelper)
 
@@ -89,15 +99,14 @@ onMounted(() => {
   const renderPass = new RenderPass(scene, camera)
   composer.addPass(renderPass)
 
-  const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight)
-  ssaoPass.kernelRadius = 1.0
-  ssaoPass.minDistance = 0
-  ssaoPass.maxDistance = 0
-  ssaoPass.output = SSAOPass.OUTPUT.Default
-  ssaoPass.bias = 0.7
-  ssaoPass.intensity = 0.306
-  ssaoPass.radius = 9
-  composer.addPass(ssaoPass)
+  // const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight)
+  // ssaoPass.minDistance = 0
+  // ssaoPass.maxDistance = 0
+  // ssaoPass.output = SSAOPass.OUTPUT.Default
+  // ssaoPass.bias = 0.7
+  // ssaoPass.intensity = 0.306
+  // ssaoPass.radius = 9
+  // composer.addPass(ssaoPass)
 
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
@@ -107,37 +116,37 @@ onMounted(() => {
   )
   composer.addPass(bloomPass)
 
-  const VignetteShader = {
-    uniforms: {
-      tDiffuse: { value: null },
-      offset: { value: 1.0 }, // سختی (vignette hardness)
-      darkness: { value: 1.0 }, // شدت (vignette amount)
-    },
-    vertexShader: /* glsl */ `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-    fragmentShader: /* glsl */ `
-    uniform sampler2D tDiffuse;
-    uniform float offset;
-    uniform float darkness;
-    varying vec2 vUv;
+  // const VignetteShader = {
+  //   uniforms: {
+  //     tDiffuse: { value: null },
+  //     offset: { value: 1.0 }, // سختی (vignette hardness)
+  //     darkness: { value: 1.0 }, // شدت (vignette amount)
+  //   },
+  //   vertexShader: /* glsl */ `
+  //   varying vec2 vUv;
+  //   void main() {
+  //     vUv = uv;
+  //     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  //   }
+  // `,
+  //   fragmentShader: /* glsl */ `
+  //   uniform sampler2D tDiffuse;
+  //   uniform float offset;
+  //   uniform float darkness;
+  //   varying vec2 vUv;
 
-    void main() {
-      vec4 texel = texture2D(tDiffuse, vUv);
-      float dist = distance(vUv, vec2(0.5, 0.5));
-      texel.rgb *= smoothstep(0.8, offset * 0.799, dist * (darkness + offset));
-      gl_FragColor = texel;
-    }
-  `,
-  }
-  const vignettePass = new ShaderPass(VignetteShader)
-  vignettePass.uniforms['darkness'].value = 0.15 // به جای 0.228
-  vignettePass.uniforms['offset'].value = 0.5
-  composer.addPass(vignettePass)
+  //   void main() {
+  //     vec4 texel = texture2D(tDiffuse, vUv);
+  //     float dist = distance(vUv, vec2(0.5, 0.5));
+  //     texel.rgb *= smoothstep(0.8, offset * 0.799, dist * (darkness + offset));
+  //     gl_FragColor = texel;
+  //   }
+  // `,
+  // }
+  // const vignettePass = new ShaderPass(VignetteShader)
+  // vignettePass.uniforms['darkness'].value = 0.15 // به جای 0.228
+  // vignettePass.uniforms['offset'].value = 0.5
+  // composer.addPass(vignettePass)
   new RGBELoader().setPath('/hdr/').load('photo_studio_01_2k.hdr', (texture) => {
     texture.mapping = THREE.EquirectangularReflectionMapping
     scene.environment = texture
@@ -181,8 +190,8 @@ onMounted(() => {
   }
 
   const colorCorrectionPass = new ShaderPass(ColorCorrectionShader)
-  colorCorrectionPass.uniforms.brightness.value = 0.078
-  colorCorrectionPass.uniforms.contrast.value = 0.033
+  colorCorrectionPass.uniforms.brightness.value = 0.088
+  colorCorrectionPass.uniforms.contrast.value = 0.063
   colorCorrectionPass.uniforms.saturation.value = 1.0
 
   composer.addPass(colorCorrectionPass)
