@@ -19,7 +19,7 @@ onMounted(() => {
   scene.background = new THREE.Color('#bdd4e5')
 
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
-  camera.position.set(0, 20, 30)
+  camera.position.set(30, 10, 20)
   camera.lookAt(0, 0, 0)
 
   renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -30,6 +30,7 @@ onMounted(() => {
   renderer.shadowMap.enabled = true
   renderer.shadowMap.type = THREE.PCFSoftShadowMap
   renderer.outputColorSpace = THREE.SRGBColorSpace
+
   container.value.appendChild(renderer.domElement)
 
   const dirLight = new THREE.DirectionalLight(0xffffff, 3)
@@ -51,33 +52,44 @@ onMounted(() => {
   scene.add(dirLight)
 
   const light = new THREE.DirectionalLight('#ffe0b5', 1)
-  light.position.set(-10, 10, 10)
+  light.position.set(0, 20, -20)
   light.shadow.bias = 0.2659
   const targetObject = new THREE.Object3D()
-  targetObject.position.set(-15, -10, 10)
+  targetObject.position.set(0, -10, -20)
   scene.add(targetObject)
   light.target = targetObject
   scene.add(light)
 
   const light2 = new THREE.DirectionalLight('#96b2b7', 0.6675)
-  light2.position.set(3, 3, 25)
+  light2.position.set(25, 10, 0)
   light2.shadow.bias = 0.2659
   const targetObject2 = new THREE.Object3D()
-  targetObject2.position.set(-3, -10, 35)
+  targetObject2.position.set(10, -10, 10)
   scene.add(targetObject2)
   light2.target = targetObject2
   scene.add(light2)
 
   const light3 = new THREE.DirectionalLight('#ffffff', 8)
   light3.castShadow = false
-  light3.position.set(-20, 10, 1000)
+  light3.position.set(20, 2, 25)
 
   const targetObject3 = new THREE.Object3D()
-  targetObject3.position.set(0, -20, -100)
+  targetObject3.position.set(0, 2, 0)
   scene.add(targetObject3)
   light3.target = targetObject3
   scene.add(light3)
 
+  const light4 = new THREE.DirectionalLight('#ffffff', 2)
+  light4.position.set(200, 100, 0)
+  light4.castShadow = false
+  const targetObject4 = new THREE.Object3D()
+  targetObject4.position.set(0, 0, 10)
+  scene.add(targetObject4)
+  light4.target = targetObject4
+  scene.add(light4)
+
+  const light4Helper = new THREE.DirectionalLightHelper(light4, 6)
+  scene.add(light4Helper)
   const light3Helper = new THREE.DirectionalLightHelper(light3, 6)
   scene.add(light3Helper)
   const dirLightHelper = new THREE.DirectionalLightHelper(light, 6)
@@ -94,6 +106,26 @@ onMounted(() => {
   controls.enableDamping = true
   controls.dampingFactor = 0.05
   controls.enabled = true
+
+  // // اضافه کردن event listener برای نمایش موقعیت دوربین
+  // controls.addEventListener('change', () => {
+  //   console.log('موقعیت دوربین:', {
+  //     x: camera.position.x.toFixed(2),
+  //     y: camera.position.y.toFixed(2),
+  //     z: camera.position.z.toFixed(2),
+  //   })
+  // })
+
+  // // اضافه کردن event listener برای نمایش موقعیت lookAt
+  // controls.addEventListener('change', () => {
+  //   const target = controls.target
+  //   console.log('نقطه نگاه دوربین:', {
+  //     x: target.x.toFixed(2),
+  //     y: target.y.toFixed(2),
+  //     z: target.z.toFixed(2),
+  //   })
+  // })
+
   // تنظیم EffectComposer و SSAO
   composer = new EffectComposer(renderer)
   const renderPass = new RenderPass(scene, camera)
@@ -116,37 +148,37 @@ onMounted(() => {
   )
   composer.addPass(bloomPass)
 
-  // const VignetteShader = {
-  //   uniforms: {
-  //     tDiffuse: { value: null },
-  //     offset: { value: 1.0 }, // سختی (vignette hardness)
-  //     darkness: { value: 1.0 }, // شدت (vignette amount)
-  //   },
-  //   vertexShader: /* glsl */ `
-  //   varying vec2 vUv;
-  //   void main() {
-  //     vUv = uv;
-  //     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-  //   }
-  // `,
-  //   fragmentShader: /* glsl */ `
-  //   uniform sampler2D tDiffuse;
-  //   uniform float offset;
-  //   uniform float darkness;
-  //   varying vec2 vUv;
+  const VignetteShader = {
+    uniforms: {
+      tDiffuse: { value: null },
+      offset: { value: 1.0 }, // سختی (vignette hardness)
+      darkness: { value: 1.0 }, // شدت (vignette amount)
+    },
+    vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+    fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform float offset;
+    uniform float darkness;
+    varying vec2 vUv;
 
-  //   void main() {
-  //     vec4 texel = texture2D(tDiffuse, vUv);
-  //     float dist = distance(vUv, vec2(0.5, 0.5));
-  //     texel.rgb *= smoothstep(0.8, offset * 0.799, dist * (darkness + offset));
-  //     gl_FragColor = texel;
-  //   }
-  // `,
-  // }
-  // const vignettePass = new ShaderPass(VignetteShader)
-  // vignettePass.uniforms['darkness'].value = 0.15 // به جای 0.228
-  // vignettePass.uniforms['offset'].value = 0.5
-  // composer.addPass(vignettePass)
+    void main() {
+      vec4 texel = texture2D(tDiffuse, vUv);
+      float dist = distance(vUv, vec2(0.5, 0.5));
+      texel.rgb *= smoothstep(0.8, offset * 0.799, dist * (darkness + offset));
+      gl_FragColor = texel;
+    }
+  `,
+  }
+  const vignettePass = new ShaderPass(VignetteShader)
+  vignettePass.uniforms['darkness'].value = 0.15 // به جای 0.228
+  vignettePass.uniforms['offset'].value = 0.5
+  composer.addPass(vignettePass)
   new RGBELoader().setPath('/hdr/').load('photo_studio_01_2k.hdr', (texture) => {
     texture.mapping = THREE.EquirectangularReflectionMapping
     scene.environment = texture
@@ -222,8 +254,8 @@ function loadModel() {
     (gltf) => {
       console.log('✅ مدل لود شد')
       const model = gltf.scene
-      const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
 
+      const maxAnisotropy = renderer.capabilities.getMaxAnisotropy()
       model.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true
@@ -257,9 +289,10 @@ function loadModel() {
       })
 
       const box = new THREE.Box3().setFromObject(model)
-      const center = box.getCenter(new THREE.Vector3())
+      // const center = box.getCenter(new THREE.Vector3())
       const size = box.getSize(new THREE.Vector3())
-      model.position.sub(center)
+      // model.position.sub(center)
+      model.position.set(0, 0, 0)
       const maxDim = Math.max(size.x, size.y, size.z)
       const scale = 100 / maxDim
       model.scale.multiplyScalar(scale)
