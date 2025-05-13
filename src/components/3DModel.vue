@@ -11,6 +11,9 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
 
+// import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js'
+// import { RectAreaLightHelper } from 'three/addons/helpers/RectAreaLightHelper.js'
+
 const container = ref(null)
 let scene, camera, renderer, controls, composer
 
@@ -23,6 +26,7 @@ onMounted(() => {
   camera.lookAt(0, 0, 0)
 
   renderer = new THREE.WebGLRenderer({ antialias: true })
+  // RectAreaLightUniformsLib.init()
   renderer.toneMapping = THREE.LinearToneMapping
   renderer.toneMappingExposure = 1.278
 
@@ -51,50 +55,67 @@ onMounted(() => {
   dirLight.target = targetSadowObject
   scene.add(dirLight)
 
-  const light = new THREE.DirectionalLight('#ffe0b5', 1)
-  light.position.set(0, 20, -20)
-  light.shadow.bias = 0.2659
+  const yellowLight = new THREE.DirectionalLight('#ffe0b5', 1)
+  yellowLight.position.set(0, 20, -20)
+  yellowLight.shadow.bias = 0.2659
   const targetObject = new THREE.Object3D()
   targetObject.position.set(0, -10, -20)
   scene.add(targetObject)
-  light.target = targetObject
-  scene.add(light)
+  yellowLight.target = targetObject
+  scene.add(yellowLight)
 
-  const light2 = new THREE.DirectionalLight('#96b2b7', 0.6675)
-  light2.position.set(25, 10, 0)
-  light2.shadow.bias = 0.2659
+  const blueLight = new THREE.DirectionalLight('#96b2b7', 0.6675)
+  blueLight.position.set(25, 10, 0)
+  blueLight.shadow.bias = 0.2659
   const targetObject2 = new THREE.Object3D()
   targetObject2.position.set(10, -10, 10)
   scene.add(targetObject2)
-  light2.target = targetObject2
-  scene.add(light2)
+  blueLight.target = targetObject2
+  scene.add(blueLight)
 
-  const light3 = new THREE.DirectionalLight('#ffffff', 8)
-  light3.castShadow = false
-  light3.position.set(20, 2, 25)
+  // const skyColor = 0xb1e1ff // light blue
+  // const groundColor = 0x000000 // brownish orange
+  // const intensity = 3
+  // const light = new THREE.HemisphereLight(skyColor, groundColor, intensity)
+  // scene.add(light)
 
-  const targetObject3 = new THREE.Object3D()
-  targetObject3.position.set(0, 2, 0)
-  scene.add(targetObject3)
-  light3.target = targetObject3
-  scene.add(light3)
+  // const color = 0xbaedff
+  // const intensity = 1
+  // const width = window.innerWidth
+  // const height = window.innerHeight
+  // const light = new THREE.RectAreaLight(color, intensity, width, height)
+  // light.position.set(0, 100, 0)
+  // light.rotation.x = THREE.MathUtils.degToRad(-90)
+  // scene.add(light)
 
-  const light4 = new THREE.DirectionalLight('#ffffff', 2)
-  light4.position.set(200, 100, 0)
-  light4.castShadow = false
-  const targetObject4 = new THREE.Object3D()
-  targetObject4.position.set(0, 0, 10)
-  scene.add(targetObject4)
-  light4.target = targetObject4
-  scene.add(light4)
+  // const helper = new RectAreaLightHelper(light)
+  // light.add(helper)
+  // const backLight = new THREE.DirectionalLight('#ffffff', 8)
+  // backLight.castShadow = false
+  // backLight.position.set(20, 2, 25)
 
-  const light4Helper = new THREE.DirectionalLightHelper(light4, 6)
-  scene.add(light4Helper)
-  const light3Helper = new THREE.DirectionalLightHelper(light3, 6)
-  scene.add(light3Helper)
-  const dirLightHelper = new THREE.DirectionalLightHelper(light, 6)
+  // const targetObject3 = new THREE.Object3D()
+  // targetObject3.position.set(0, 2, 0)
+  // scene.add(targetObject3)
+  // backLight.target = targetObject3
+  // scene.add(backLight)
+
+  // const sideLight = new THREE.DirectionalLight('#ffffff', 2)
+  // sideLight.position.set(200, 100, 0)
+  // sideLight.castShadow = false
+  // const targetObject4 = new THREE.Object3D()
+  // targetObject4.position.set(0, 0, 10)
+  // scene.add(targetObject4)
+  // sideLight.target = targetObject4
+  // scene.add(sideLight)
+
+  // const light4Helper = new THREE.DirectionalLightHelper(sideLight, 6)
+  // scene.add(light4Helper)
+  // const light3Helper = new THREE.DirectionalLightHelper(backLight, 6)
+  // scene.add(light3Helper)
+  const dirLightHelper = new THREE.DirectionalLightHelper(yellowLight, 6)
   scene.add(dirLightHelper)
-  const dirLightHelper2 = new THREE.DirectionalLightHelper(light2, 6)
+  const dirLightHelper2 = new THREE.DirectionalLightHelper(blueLight, 6)
   scene.add(dirLightHelper2)
   const dirLightHelperShadow = new THREE.DirectionalLightHelper(dirLight, 6)
   scene.add(dirLightHelperShadow)
