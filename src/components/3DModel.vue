@@ -7,7 +7,7 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass'
-// import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass'
+import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass'
 
@@ -90,29 +90,30 @@ onMounted(() => {
 
   // const helper = new RectAreaLightHelper(light)
   // light.add(helper)
-  // const backLight = new THREE.DirectionalLight('#ffffff', 8)
-  // backLight.castShadow = false
-  // backLight.position.set(20, 2, 25)
 
-  // const targetObject3 = new THREE.Object3D()
-  // targetObject3.position.set(0, 2, 0)
-  // scene.add(targetObject3)
-  // backLight.target = targetObject3
-  // scene.add(backLight)
+  const backLight = new THREE.DirectionalLight('#ffffff', 12)
+  backLight.castShadow = false
+  backLight.position.set(0, 4, 25)
 
-  // const sideLight = new THREE.DirectionalLight('#ffffff', 2)
-  // sideLight.position.set(200, 100, 0)
-  // sideLight.castShadow = false
-  // const targetObject4 = new THREE.Object3D()
-  // targetObject4.position.set(0, 0, 10)
-  // scene.add(targetObject4)
-  // sideLight.target = targetObject4
-  // scene.add(sideLight)
+  const targetObject3 = new THREE.Object3D()
+  targetObject3.position.set(0, 2, 0)
+  scene.add(targetObject3)
+  backLight.target = targetObject3
+  scene.add(backLight)
 
-  // const light4Helper = new THREE.DirectionalLightHelper(sideLight, 6)
-  // scene.add(light4Helper)
-  // const light3Helper = new THREE.DirectionalLightHelper(backLight, 6)
-  // scene.add(light3Helper)
+  const sideLight = new THREE.DirectionalLight('#ffffff', 4)
+  sideLight.position.set(200, 100, 0)
+  sideLight.castShadow = false
+  const targetObject4 = new THREE.Object3D()
+  targetObject4.position.set(0, 0, 10)
+  scene.add(targetObject4)
+  sideLight.target = targetObject4
+  scene.add(sideLight)
+
+  const light4Helper = new THREE.DirectionalLightHelper(sideLight, 6)
+  scene.add(light4Helper)
+  const light3Helper = new THREE.DirectionalLightHelper(backLight, 6)
+  scene.add(light3Helper)
   const dirLightHelper = new THREE.DirectionalLightHelper(yellowLight, 6)
   scene.add(dirLightHelper)
   const dirLightHelper2 = new THREE.DirectionalLightHelper(blueLight, 6)
@@ -128,42 +129,23 @@ onMounted(() => {
   controls.dampingFactor = 0.05
   controls.enabled = true
 
-  // // اضافه کردن event listener برای نمایش موقعیت دوربین
-  // controls.addEventListener('change', () => {
-  //   console.log('موقعیت دوربین:', {
-  //     x: camera.position.x.toFixed(2),
-  //     y: camera.position.y.toFixed(2),
-  //     z: camera.position.z.toFixed(2),
-  //   })
-  // })
-
-  // // اضافه کردن event listener برای نمایش موقعیت lookAt
-  // controls.addEventListener('change', () => {
-  //   const target = controls.target
-  //   console.log('نقطه نگاه دوربین:', {
-  //     x: target.x.toFixed(2),
-  //     y: target.y.toFixed(2),
-  //     z: target.z.toFixed(2),
-  //   })
-  // })
-
   // تنظیم EffectComposer و SSAO
   composer = new EffectComposer(renderer)
   const renderPass = new RenderPass(scene, camera)
   composer.addPass(renderPass)
 
-  // const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight)
-  // ssaoPass.minDistance = 0
-  // ssaoPass.maxDistance = 0
-  // ssaoPass.output = SSAOPass.OUTPUT.Default
-  // ssaoPass.bias = 0.7
-  // ssaoPass.intensity = 0.306
-  // ssaoPass.radius = 9
-  // composer.addPass(ssaoPass)
+  const ssaoPass = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight)
+  ssaoPass.minDistance = 0
+  ssaoPass.maxDistance = 0
+  ssaoPass.output = SSAOPass.OUTPUT.Default
+  ssaoPass.bias = 0.7
+  ssaoPass.intensity = 0.306
+  ssaoPass.radius = 9
+  composer.addPass(ssaoPass)
 
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(window.innerWidth, window.innerHeight),
-    0.167,
+    0.107,
     0.489,
     0.442,
   )
